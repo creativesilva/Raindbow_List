@@ -3,148 +3,356 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Reading Flash Cards</title>
+  <title>Reading Cards</title>
   <style>
     body {
       margin: 0;
       font-family: Arial, Helvetica, sans-serif;
+      height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-      background: #f5f5f5;
+      background: #f3f4f6;
       user-select: none;
       -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
     }
     .card {
-      width: min(92vw, 700px);
-      height: min(60vh, 420px);
-      background: white;
+      width: min(92vw, 720px);
+      min-height: min(70vh, 520px);
+      background: #ffffff;
       border-radius: 24px;
       box-shadow: 0 10px 30px rgba(0,0,0,.12);
+      padding: 22px;
       display: flex;
       flex-direction: column;
+      justify-content: space-between;
+      text-align: center;
+    }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 16px;
+      color: rgba(0,0,0,.75);
+    }
+    .pill {
+      background: #eef2ff;
+      padding: 8px 12px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .wordWrap {
+      display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
-      text-align: center;
+      flex: 1;
+      padding: 12px 8px;
     }
     .word {
       font-size: clamp(44px, 9vw, 96px);
       font-weight: 700;
       letter-spacing: 1px;
+      color: #111827;
     }
     .hint {
-      margin-top: 18px;
-      font-size: 18px;
-      opacity: .7;
-      line-height: 1.2;
+      margin-top: 8px;
+      font-size: 16px;
+      color: rgba(0,0,0,.65);
+      line-height: 1.25;
     }
-    .row {
-      margin-top: 18px;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
     }
     button {
       border: 0;
-      padding: 12px 16px;
-      border-radius: 14px;
-      font-size: 16px;
+      padding: 16px 14px;
+      border-radius: 18px;
+      font-size: 18px;
       cursor: pointer;
     }
-    .primary { background: #111; color: #fff; }
-    .ghost { background: #e9e9e9; color: #111; }
+    .down {
+      background: #fee2e2;
+      color: #7f1d1d;
+    }
+    .up {
+      background: #dcfce7;
+      color: #14532d;
+    }
+    .smallRow {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .smallBtn {
+      background: #e5e7eb;
+      color: #111827;
+      font-size: 14px;
+      padding: 10px 12px;
+      border-radius: 14px;
+    }
+    .surprise {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 12px;
+    }
+    .surpriseTitle {
+      font-size: 34px;
+      font-weight: 800;
+      color: #111827;
+    }
+    .surpriseText {
+      font-size: 18px;
+      color: rgba(0,0,0,.7);
+      max-width: 520px;
+    }
+    .surprise img {
+      width: min(70vw, 260px);
+      height: auto;
+      border-radius: 18px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.15);
+      background: #fff;
+    }
   </style>
 </head>
 <body>
-  <div class="card" id="card" role="button" aria-label="Tap for next word">
-    <div class="word" id="word">Tap to start</div>
-    <div class="hint" id="hint">
-      Tap the card for the next word<br>
-      Buttons: shuffle, restart
+  <div class="card" id="card">
+    <div class="top">
+      <div class="pill" id="modePill">Round 1</div>
+      <div class="pill" id="progressPill">0 of 0</div>
+      <div class="pill" id="missedPill">Missed: 0</div>
     </div>
-    <div class="row">
-      <button class="ghost" id="shuffleBtn" type="button">Shuffle</button>
-      <button class="ghost" id="restartBtn" type="button">Restart</button>
-      <button class="primary" id="nextBtn" type="button">Next</button>
+    <div class="wordWrap" id="practiceArea">
+      <div>
+        <div class="word" id="word">Tap Start</div>
+        <div class="hint" id="hint">Press Start, then use thumbs up or thumbs down</div>
+      </div>
+    </div>
+    <div class="surprise" id="surpriseArea">
+      <div class="surpriseTitle">You did it!</div>
+      <div class="surpriseText">All words are correct. Great job!</div>
+      <img id="surpriseImg" alt="Surprise character cheering" />
+      <div class="smallRow">
+        <button class="smallBtn" id="playAgainBtn" type="button">Play Again</button>
+      </div>
+    </div>
+    <div id="buttonsArea">
+      <div class="controls">
+        <button class="down" id="downBtn" type="button">Thumbs Down</button>
+        <button class="up" id="upBtn" type="button">Thumbs Up</button>
+      </div>
+      <div class="smallRow">
+        <button class="smallBtn" id="startBtn" type="button">Start</button>
+        <button class="smallBtn" id="shuffleBtn" type="button">Shuffle</button>
+        <button class="smallBtn" id="resetBtn" type="button">Reset</button>
+      </div>
     </div>
   </div>
 
   <script>
-    // Your 1st grade word list
     const words = [
       "school","down","out","very","be","pull","move","two","again","new",
       "there","use","could","live","one","then","three","eat","under","all",
       "call","day","her","want","around"
     ];
 
-    // Fisher-Yates shuffle
+    const surpriseImageFile = "lol.png";
+
     function shuffleArray(arr) {
       for (let i = arr.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
+        const temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
       }
       return arr;
     }
 
-    let deck = [];
-    let index = 0;
-
+    const modePill = document.getElementById("modePill");
+    const progressPill = document.getElementById("progressPill");
+    const missedPill = document.getElementById("missedPill");
     const wordEl = document.getElementById("word");
     const hintEl = document.getElementById("hint");
-    const cardEl = document.getElementById("card");
 
-    function startNewDeck() {
-      deck = shuffleArray([...words]);
-      index = 0;
-      showCurrent();
-    }
+    const practiceArea = document.getElementById("practiceArea");
+    const surpriseArea = document.getElementById("surpriseArea");
+    const surpriseImg = document.getElementById("surpriseImg");
+    const buttonsArea = document.getElementById("buttonsArea");
 
-    function showCurrent() {
-      if (deck.length === 0) startNewDeck();
-      wordEl.textContent = deck[index];
-      hintEl.textContent = "Tap when she reads it correctly";
-    }
+    const startBtn = document.getElementById("startBtn");
+    const shuffleBtn = document.getElementById("shuffleBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const upBtn = document.getElementById("upBtn");
+    const downBtn = document.getElementById("downBtn");
+    const playAgainBtn = document.getElementById("playAgainBtn");
 
-    function nextWord() {
-      index++;
-      if (index >= deck.length) {
-        // reshuffle after finishing all words
-        startNewDeck();
+    let deck = [];
+    let index = 0;
+    let started = false;
+
+    let round = 1;
+    let missedSet = new Set();
+    let reviewDeck = [];
+    let reviewIndex = 0;
+
+    function updatePills() {
+      if (!started) {
+        modePill.textContent = "Round 1";
+        progressPill.textContent = "0 of " + words.length;
+        missedPill.textContent = "Missed: 0";
         return;
       }
-      showCurrent();
+      if (round === 1) {
+        modePill.textContent = "Round 1";
+        progressPill.textContent = (index + 1) + " of " + deck.length;
+        missedPill.textContent = "Missed: " + missedSet.size;
+      } else {
+        modePill.textContent = "Review";
+        progressPill.textContent = (reviewIndex + 1) + " of " + reviewDeck.length;
+        missedPill.textContent = "Missed: " + missedSet.size;
+      }
     }
 
-    // Controls
-    document.getElementById("nextBtn").addEventListener("click", (e) => {
-      e.stopPropagation();
-      nextWord();
-    });
+    function showWord(text) {
+      wordEl.textContent = text;
+    }
 
-    document.getElementById("shuffleBtn").addEventListener("click", (e) => {
-      e.stopPropagation();
-      startNewDeck();
-    });
-
-    document.getElementById("restartBtn").addEventListener("click", (e) => {
-      e.stopPropagation();
-      deck = [...words];
+    function startGame() {
+      started = true;
+      round = 1;
+      missedSet = new Set();
+      deck = shuffleArray([...words]);
       index = 0;
-      showCurrent();
+      practiceArea.style.display = "flex";
+      surpriseArea.style.display = "none";
+      buttonsArea.style.display = "block";
+      hintEl.textContent = "Read the word. Press thumbs up if correct, thumbs down if not.";
+      showWord(deck[index]);
+      updatePills();
+    }
+
+    function goToReviewOrFinish() {
+      if (missedSet.size === 0) {
+        showSurprise();
+        return;
+      }
+      round = 2;
+      reviewDeck = shuffleArray(Array.from(missedSet));
+      reviewIndex = 0;
+      hintEl.textContent = "Only the missed words now. Keep going until all are thumbs up.";
+      showWord(reviewDeck[reviewIndex]);
+      updatePills();
+    }
+
+    function showSurprise() {
+      practiceArea.style.display = "none";
+      buttonsArea.style.display = "none";
+      surpriseArea.style.display = "flex";
+      surpriseImg.src = surpriseImageFile;
+    }
+
+    function nextRound1() {
+      index++;
+      if (index >= deck.length) {
+        goToReviewOrFinish();
+        return;
+      }
+      showWord(deck[index]);
+      updatePills();
+    }
+
+    function nextReview() {
+      reviewIndex++;
+      if (missedSet.size === 0) {
+        showSurprise();
+        return;
+      }
+      if (reviewIndex >= reviewDeck.length) {
+        reviewDeck = shuffleArray(Array.from(missedSet));
+        reviewIndex = 0;
+      }
+      showWord(reviewDeck[reviewIndex]);
+      updatePills();
+    }
+
+    function markUp() {
+      if (!started) return;
+      if (round === 1) {
+        nextRound1();
+        return;
+      }
+      const current = reviewDeck[reviewIndex];
+      missedSet.delete(current);
+      if (missedSet.size === 0) {
+        showSurprise();
+        return;
+      }
+      nextReview();
+    }
+
+    function markDown() {
+      if (!started) return;
+      if (round === 1) {
+        missedSet.add(deck[index]);
+        nextRound1();
+        return;
+      }
+      const current = reviewDeck[reviewIndex];
+      missedSet.add(current);
+      nextReview();
+    }
+
+    startBtn.addEventListener("click", startGame);
+
+    shuffleBtn.addEventListener("click", () => {
+      if (!started) {
+        deck = shuffleArray([...words]);
+        showWord("Tap Start");
+        hintEl.textContent = "Press Start, then use thumbs up or thumbs down";
+        updatePills();
+        return;
+      }
+      if (round === 1) {
+        deck = shuffleArray([...words]);
+        index = 0;
+        showWord(deck[index]);
+      } else {
+        reviewDeck = shuffleArray(Array.from(missedSet));
+        reviewIndex = 0;
+        showWord(reviewDeck[reviewIndex]);
+      }
+      updatePills();
     });
 
-    // Tap anywhere on the card to advance
-    cardEl.addEventListener("click", () => {
-      if (wordEl.textContent === "Tap to start") {
-        startNewDeck();
-      } else {
-        nextWord();
-      }
+    resetBtn.addEventListener("click", () => {
+      started = false;
+      round = 1;
+      missedSet = new Set();
+      deck = [];
+      index = 0;
+      reviewDeck = [];
+      reviewIndex = 0;
+      practiceArea.style.display = "flex";
+      surpriseArea.style.display = "none";
+      buttonsArea.style.display = "block";
+      showWord("Tap Start");
+      hintEl.textContent = "Press Start, then use thumbs up or thumbs down";
+      updatePills();
     });
+
+    upBtn.addEventListener("click", markUp);
+    downBtn.addEventListener("click", markDown);
+    playAgainBtn.addEventListener("click", startGame);
+
+    updatePills();
   </script>
 </body>
 </html>
